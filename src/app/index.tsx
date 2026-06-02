@@ -1,98 +1,159 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState, useEffect, useCallback } from "react";
+import { StyleSheet, View, BackHandler } from "react-native";
+import { useRouter } from "expo-router";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from "react-native-reanimated";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Rolodex } from "@/components/rolodex";
+import { AddEntrySheet } from "@/components/add-entry-sheet";
+import { NewTopicModal } from "@/components/new-topic-modal";
+import { useAccentColor } from "@/context/accent-color";
+import { loadTopics, addTopic, addEntry } from "@/data/storage";
+import type { Topic, Entry } from "@/data/types";
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+export default function IndexScreen() {
+  const router = useRouter();
+  const { accentColor, setAccentColor, isDark } = useAccentColor();
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+  const [showEntrySheet, setShowEntrySheet] = useState(false);
+  const [showNewTopic, setShowNewTopic] = useState(false);
+
+  const animatedBg = useSharedValue(accentColor);
+
+  useEffect(() => {
+    loadTopics().then(setTopics);
+  }, []);
+
+  useEffect(() => {
+    animatedBg.value = withTiming(accentColor, { duration: 800 });
+  }, [accentColor]);
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (showNewTopic) {
+        setShowNewTopic(false);
+        return true;
+      }
+      if (showEntrySheet) {
+        setShowEntrySheet(false);
+        setSelectedTopic(null);
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [showNewTopic, showEntrySheet]);
+
+  const bgStyle = useAnimatedStyle(() => ({
+    backgroundColor: animatedBg.value,
+  }));
+
+  const reloadTopics = useCallback(async () => {
+    setTopics(await loadTopics());
+  }, []);
+
+  const handleFocusChange = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < topics.length) {
+        setAccentColor(topics[index].color);
+      } else {
+        setAccentColor("#000000");
+      }
+    },
+    [topics, setAccentColor],
   );
-}
 
-export default function HomeScreen() {
+  const handleTopicTap = useCallback((topic: Topic) => {
+    setSelectedTopic(topic);
+    setShowEntrySheet(true);
+  }, []);
+
+  const handleTopicLongPress = useCallback(
+    (topic: Topic) => {
+      router.push({ pathname: "/topic/[id]" as any, params: { id: topic.id } });
+    },
+    [router],
+  );
+
+  const handleSaveEntry = useCallback(
+    async (text: string) => {
+      if (!selectedTopic) return;
+      const entry: Entry = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        topicId: selectedTopic.id,
+        text,
+        createdAt: Date.now(),
+      };
+      await addEntry(entry);
+    },
+    [selectedTopic],
+  );
+
+  const handleCreateTopic = useCallback(
+    async (name: string, color: string) => {
+      const topic: Topic = {
+        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+        name,
+        color,
+        createdAt: Date.now(),
+      };
+      await addTopic(topic);
+      await reloadTopics();
+    },
+    [reloadTopics],
+  );
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: isDark ? "#08080e" : "#f0f0f5" },
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.accentOverlay,
+          bgStyle,
+          { opacity: isDark ? 0.07 : 0.05 },
+        ]}
+        pointerEvents="none"
+      />
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+      <Rolodex
+        topics={topics}
+        onTopicTap={handleTopicTap}
+        onTopicLongPress={handleTopicLongPress}
+        onNewTopic={() => setShowNewTopic(true)}
+        onFocusChange={handleFocusChange}
+      />
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+      <AddEntrySheet
+        visible={showEntrySheet}
+        onSave={handleSaveEntry}
+        onClose={() => {
+          setShowEntrySheet(false);
+          setSelectedTopic(null);
+        }}
+      />
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <NewTopicModal
+        visible={showNewTopic}
+        onConfirm={handleCreateTopic}
+        onClose={() => setShowNewTopic(false)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  accentOverlay: {
+    ...StyleSheet.absoluteFill,
   },
 });
