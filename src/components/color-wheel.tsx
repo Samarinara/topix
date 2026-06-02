@@ -1,13 +1,8 @@
-import { useMemo, useState, useCallback } from 'react';
-import { StyleSheet, View, Text, LayoutChangeEvent } from 'react-native';
+import { useMemo, useCallback } from 'react';
+import { StyleSheet, View, Text } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  runOnJS,
-} from 'react-native-reanimated';
-import Svg, { Path, Defs, RadialGradient, Stop, Circle, Rect, LinearGradient, ClipPath } from 'react-native-svg';
+import { runOnJS } from 'react-native-reanimated';
+import Svg, { Path, Defs, RadialGradient, Stop, Circle, ClipPath } from 'react-native-svg';
 
 import { hsvToHex } from '@/data/color-utils';
 
@@ -17,8 +12,7 @@ const DEG_PER_SLICE = 360 / SLICES;
 type Props = {
   hue: number;
   saturation: number;
-  value: number;
-  onChange: (hue: number, saturation: number, value: number) => void;
+  onChange: (hue: number, saturation: number) => void;
   size?: number;
 };
 
@@ -32,7 +26,7 @@ function slicePathData(cx: number, cy: number, r: number, startDeg: number, endD
   return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z`;
 }
 
-export function ColorWheel({ hue, saturation, value, onChange, size = 280 }: Props) {
+export function ColorWheel({ hue, saturation, onChange, size = 280 }: Props) {
   const cx = size / 2;
   const cy = size / 2;
   const radius = size / 2 - 4;
@@ -62,54 +56,27 @@ export function ColorWheel({ hue, saturation, value, onChange, size = 280 }: Pro
       let newHue = (Math.atan2(dy, dx) * 180) / Math.PI + 90;
       if (newHue < 0) newHue += 360;
       const newSat = dist / radius;
-      onChange(newHue % 360, Math.min(newSat, 1), value);
+      onChange(newHue % 360, Math.min(newSat, 1));
     },
-    [cx, cy, radius, value, onChange],
+    [cx, cy, radius, onChange],
   );
 
-  const wheelGesture = Gesture.Pan()
+  const tapGesture = Gesture.Tap().onEnd((e) => runOnJS(updateColor)(e.x, e.y));
+  const panGesture = Gesture.Pan()
     .onBegin((e) => runOnJS(updateColor)(e.x, e.y))
     .onUpdate((e) => runOnJS(updateColor)(e.x, e.y));
-
-  const thumbPos = useSharedValue(value);
-  const thumbStyle = useAnimatedStyle(() => ({
-    left: withSpring(thumbPos.value * (size - 28), { damping: 20 }),
-  }));
-
-  const updateValue = useCallback(
-    (x: number, sliderWidth: number) => {
-      const newV = Math.max(0, Math.min(1, (x - 14) / (sliderWidth - 28)));
-      thumbPos.value = newV;
-      onChange(hue, saturation, newV);
-    },
-    [hue, saturation, onChange, thumbPos],
-  );
-
-  const [sliderWidth, setSliderWidth] = useState(size);
-  const onSliderLayout = useCallback((e: LayoutChangeEvent) => {
-    setSliderWidth(e.nativeEvent.layout.width);
-  }, []);
-
-  const sliderGesture = Gesture.Pan()
-    .onBegin((e) => runOnJS(updateValue)(e.x, sliderWidth))
-    .onUpdate((e) => runOnJS(updateValue)(e.x, sliderWidth));
-
-  const sliderColor = hsvToHex(hue, saturation, 1);
+  const wheelGesture = Gesture.Simultaneous(panGesture, tapGesture);
 
   return (
     <View style={styles.container}>
       <GestureDetector gesture={wheelGesture}>
-        <Animated.View>
+        <View>
           <Svg width={size} height={size}>
             <Defs>
               <RadialGradient id="satMask" cx="50%" cy="50%" r="50%">
                 <Stop offset="0%" stopColor="white" stopOpacity="1" />
                 <Stop offset="85%" stopColor="white" stopOpacity="0.15" />
                 <Stop offset="100%" stopColor="white" stopOpacity="0" />
-              </RadialGradient>
-              <RadialGradient id="valMask" cx="50%" cy="50%" r="50%">
-                <Stop offset="0%" stopColor="black" stopOpacity="0" />
-                <Stop offset="100%" stopColor="black" stopOpacity={1 - value} />
               </RadialGradient>
               <ClipPath id="wheelClip">
                 <Circle cx={cx} cy={cy} r={radius} />
@@ -119,44 +86,22 @@ export function ColorWheel({ hue, saturation, value, onChange, size = 280 }: Pro
               <Path key={i} d={s.d} fill={s.color} />
             ))}
             <Circle cx={cx} cy={cy} r={radius} fill="url(#satMask)" />
-            <Circle cx={cx} cy={cy} r={radius} fill="url(#valMask)" />
             <Circle
               cx={pickerX}
               cy={pickerY}
-              r={10}
+              r={14}
               stroke="white"
-              strokeWidth={2.5}
-              fill={hsvToHex(hue, saturation, value)}
+              strokeWidth={3}
+              fill={hsvToHex(hue, saturation, 1)}
+              opacity={0.95}
             />
           </Svg>
-        </Animated.View>
+        </View>
       </GestureDetector>
 
-      <View style={[styles.sliderRow, { width: size }]} onLayout={onSliderLayout}>
-        <Svg width={size} height={32}>
-          <Defs>
-            <LinearGradient id="valGrad" x1="0" y1="0" x2="1" y2="0">
-              <Stop offset="0%" stopColor="black" />
-              <Stop offset="100%" stopColor={sliderColor} />
-            </LinearGradient>
-          </Defs>
-          <Rect
-            x={14}
-            y={10}
-            width={size - 28}
-            height={12}
-            rx={6}
-            fill="url(#valGrad)"
-          />
-        </Svg>
-        <GestureDetector gesture={sliderGesture}>
-          <Animated.View style={[styles.thumb, thumbStyle]} />
-        </GestureDetector>
-      </View>
-
       <View style={styles.previewRow}>
-        <View style={[styles.previewCircle, { backgroundColor: hsvToHex(hue, saturation, value) }]} />
-        <Text style={styles.hexText}>{hsvToHex(hue, saturation, value)}</Text>
+        <View style={[styles.previewCircle, { backgroundColor: hsvToHex(hue, saturation, 1) }]} />
+        <Text style={styles.hexText}>{hsvToHex(hue, saturation, 1)}</Text>
       </View>
     </View>
   );
@@ -167,30 +112,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  sliderRow: {
-    position: 'relative',
-    height: 32,
-    justifyContent: 'center',
-  },
-  thumb: {
-    position: 'absolute',
-    top: 6,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: 'white',
-    borderWidth: 2,
-    borderColor: '#ccc',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    elevation: 3,
-  },
   previewRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    paddingTop: 4,
   },
   previewCircle: {
     width: 28,

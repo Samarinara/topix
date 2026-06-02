@@ -18,7 +18,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": true,
-      "package": "com.anonymous.topix"
+      "package": "com.anonymous.topix",
+      "backgroundColor": "#08080e"
     },
     "web": {
       "output": "static",

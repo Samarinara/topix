@@ -1,29 +1,39 @@
 import { Stack } from "expo-router";
-import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AccentColorProvider } from "@/context/accent-color";
+import { AccentColorProvider, useAccentColor } from "@/context/accent-color";
+
+function Navigation() {
+  const { isDark } = useAccentColor();
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        animation: "fade",
+        animationDuration: 500,
+        fullScreenGestureEnabled: true,
+        contentStyle: {
+          backgroundColor: isDark ? "#08080e" : "#f0f0f5",
+        },
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen
+        name="topic/[id]"
+        options={{
+          gestureEnabled: true,
+          gestureDirection: "horizontal",
+        }}
+      />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#08080e" }}>
       <AccentColorProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation:
-              Platform.OS === "android" ? "slide_from_right" : "default",
-          }}
-        >
-          <Stack.Screen name="index" />
-          <Stack.Screen
-            name="topic/[id]"
-            options={{
-              animation: "slide_from_right",
-              gestureEnabled: true,
-              gestureDirection: "horizontal",
-            }}
-          />
-        </Stack>
+        <Navigation />
       </AccentColorProvider>
     </GestureHandlerRootView>
   );

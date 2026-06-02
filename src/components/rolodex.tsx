@@ -1,13 +1,17 @@
-import { useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { View, StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedScrollHandler,
+  useAnimatedRef,
   useSharedValue,
   withTiming,
+  withDelay,
+  scrollTo,
   runOnJS,
   type SharedValue,
 } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 
 import { RolodexItem } from "./rolodex-item";
 import { HoldIndicator } from "./hold-indicator";
@@ -36,6 +40,9 @@ export function Rolodex({
   const scrollY = useSharedValue(0);
   const focusedIndex = useSharedValue(0);
   const holdProgress = useSharedValue(0);
+  const lastProgress = useSharedValue(0);
+  const aref = useAnimatedRef<Animated.FlatList<any>>();
+  const entryPlayed = useRef(false);
 
   const data: RolodexItemData[] = useMemo(
     () => [
@@ -51,12 +58,36 @@ export function Rolodex({
     [topics],
   );
 
+  useEffect(() => {
+    if (containerHeight > 0 && data.length > 1 && !entryPlayed.current) {
+      entryPlayed.current = true;
+      const negativeOffset = -Math.max(
+        containerHeight * 2,
+        data.length * ITEM_HEIGHT * 3,
+      );
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          scrollTo(aref, 0, negativeOffset, false);
+          requestAnimationFrame(() => {
+            scrollTo(aref, 0, 0, true);
+          });
+        });
+      }, 400);
+    }
+  }, [containerHeight, data.length, aref]);
+
   const centerOffset =
     containerHeight > 0 ? (containerHeight - ITEM_HEIGHT) / 2 : 0;
+
+  const lastHapticIndex = useRef(-1);
 
   const handleFocusChange = useCallback(
     (index: number) => {
       onFocusChange(index);
+      if (index !== lastHapticIndex.current) {
+        lastHapticIndex.current = index;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
     },
     [onFocusChange],
   );
@@ -95,18 +126,25 @@ export function Rolodex({
   });
 
   const tapGesture = Gesture.Tap().onEnd(() => {
-    runOnJS(triggerTap)();
+    'worklet';
+    if (lastProgress.value < 0.1) {
+      runOnJS(triggerTap)();
+    }
   });
 
   const longPressGesture = Gesture.LongPress()
     .minDuration(600)
     .onBegin(() => {
-      holdProgress.value = withTiming(1, { duration: 600 });
+      holdProgress.value = withDelay(60, withTiming(1, { duration: 540 }));
     })
     .onStart(() => {
+      'worklet';
+      holdProgress.value = 1;
       runOnJS(triggerLongPress)();
     })
     .onFinalize(() => {
+      'worklet';
+      lastProgress.value = holdProgress.value;
       holdProgress.value = withTiming(0, { duration: 150 });
     });
 
@@ -131,6 +169,7 @@ export function Rolodex({
         onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}
       >
         <Animated.FlatList
+          ref={aref}
           data={data}
           keyExtractor={(item) => item.id}
           renderItem={({ item, index }) => (
@@ -162,10 +201,8 @@ export function Rolodex({
           pointerEvents="none"
         >
           <View style={styles.selectionLine} />
-          <View style={styles.indicatorContainer}>
-            <HoldIndicator progress={holdProgress} color={currentTopicColor} />
-          </View>
-          <View style={styles.selectionLine} />
+          <HoldIndicator progress={holdProgress} color={currentTopicColor} />
+          <View style={styles.selectionLineBottom} />
         </View>
       </View>
     </GestureDetector>
@@ -182,21 +219,18 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     right: 0,
-    justifyContent: "space-between",
     pointerEvents: "none",
   },
   selectionLine: {
     height: 1,
     backgroundColor: "rgba(255,255,255,0.08)",
   },
-  indicatorContainer: {
+  selectionLineBottom: {
     position: "absolute",
+    bottom: 0,
     left: 0,
     right: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    opacity: 0.4,
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
 });

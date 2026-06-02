@@ -32,7 +32,6 @@ export function NewTopicModal({ visible, onConfirm, onClose }: Props) {
   const [name, setName] = useState("");
   const [hue, setHue] = useState(200);
   const [sat, setSat] = useState(0.7);
-  const [val, setVal] = useState(0.9);
   const inputRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
   const [wheelSize, setWheelSize] = useState(280);
@@ -43,7 +42,6 @@ export function NewTopicModal({ visible, onConfirm, onClose }: Props) {
       setName("");
       setHue(200);
       setSat(0.7);
-      setVal(0.9);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setTimeout(() => inputRef.current?.focus(), 400);
     }
@@ -89,7 +87,7 @@ export function NewTopicModal({ visible, onConfirm, onClose }: Props) {
 
   if (!visible) return null;
 
-  const currentColor = hsvToHex(hue, sat, val);
+  const currentColor = hsvToHex(hue, sat, 1);
 
   const handleCreate = () => {
     const trimmed = name.trim();
@@ -135,11 +133,9 @@ export function NewTopicModal({ visible, onConfirm, onClose }: Props) {
           <ColorWheel
             hue={hue}
             saturation={sat}
-            value={val}
-            onChange={(h, s, v) => {
+            onChange={(h, s) => {
               setHue(h);
               setSat(s);
-              setVal(v);
             }}
             size={wheelSize}
           />

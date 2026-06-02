@@ -74,9 +74,10 @@ export default function IndexScreen() {
 
   const handleTopicLongPress = useCallback(
     (topic: Topic) => {
+      setAccentColor(topic.color);
       router.push({ pathname: "/topic/[id]" as any, params: { id: topic.id } });
     },
-    [router],
+    [router, setAccentColor],
   );
 
   const handleSaveEntry = useCallback(

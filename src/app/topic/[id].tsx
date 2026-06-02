@@ -14,7 +14,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import Animated, {
-  FadeIn,
+  FadeInDown,
+  FadeInUp,
+  BounceIn,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
@@ -179,7 +181,10 @@ export default function TopicEntriesScreen() {
         pointerEvents="none"
       />
 
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <Animated.View
+        entering={FadeInDown.duration(400).delay(100)}
+        style={[styles.header, { paddingTop: insets.top + 8 }]}
+      >
         <Pressable
           onPress={() => router.back()}
           style={({ pressed }) => [
@@ -192,29 +197,33 @@ export default function TopicEntriesScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>
           {topic.name}
         </Text>
-        <View style={[styles.headerDot, { backgroundColor: topic.color }]} />
-      </View>
+        <Animated.View
+          entering={BounceIn.duration(600).delay(250)}
+          style={[styles.headerDot, { backgroundColor: topic.color }]}
+        />
+      </Animated.View>
 
       <Animated.FlatList
-        entering={FadeIn.delay(200).duration(400)}
         data={entries}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[
           styles.listContent,
           { paddingBottom: insets.bottom + 100 },
         ]}
-        renderItem={({ item }) => (
-          <Pressable
-            onLongPress={() => handleLongPress(item)}
-            delayLongPress={400}
-            style={({ pressed }) => [
-              styles.entryCard,
-              pressed && styles.entryCardPressed,
-            ]}
-          >
-            <Text style={styles.entryText}>{item.text}</Text>
-            <Text style={styles.entryTime}>{relativeTime(item.createdAt)}</Text>
-          </Pressable>
+        renderItem={({ item, index }) => (
+          <Animated.View entering={FadeInUp.duration(400).delay(300 + index * 60)}>
+            <Pressable
+              onLongPress={() => handleLongPress(item)}
+              delayLongPress={400}
+              style={({ pressed }) => [
+                styles.entryCard,
+                pressed && styles.entryCardPressed,
+              ]}
+            >
+              <Text style={styles.entryText}>{item.text}</Text>
+              <Text style={styles.entryTime}>{relativeTime(item.createdAt)}</Text>
+            </Pressable>
+          </Animated.View>
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -226,20 +235,22 @@ export default function TopicEntriesScreen() {
         }
       />
 
-      <Pressable
-        style={({ pressed }) => [
-          styles.fab,
-          { backgroundColor: topic.color },
-          pressed && styles.fabPressed,
-        ]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setSelectedEntry(null);
-          setShowSheet(true);
-        }}
-      >
-        <Text style={styles.fabText}>+</Text>
-      </Pressable>
+      <Animated.View entering={FadeInUp.duration(400).delay(500)}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.fab,
+            { backgroundColor: topic.color },
+            pressed && styles.fabPressed,
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setSelectedEntry(null);
+            setShowSheet(true);
+          }}
+        >
+          <Text style={styles.fabText}>+</Text>
+        </Pressable>
+      </Animated.View>
 
       <AddEntrySheet
         visible={showSheet}
