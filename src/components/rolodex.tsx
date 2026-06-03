@@ -134,6 +134,10 @@ export function Rolodex({
     }
   });
 
+  const triggerHoldHaptic = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, []);
+
   const longPressGesture = Gesture.LongPress()
     .minDuration(600)
     .onBegin(() => {
@@ -143,6 +147,7 @@ export function Rolodex({
       'worklet';
       holdProgress.value = 1;
       runOnJS(triggerLongPress)();
+      runOnJS(triggerHoldHaptic)();
     })
     .onFinalize(() => {
       'worklet';

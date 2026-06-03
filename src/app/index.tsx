@@ -8,6 +8,7 @@ import {
   runOnJS,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import * as Haptics from "expo-haptics";
 
 import { Rolodex } from "@/components/rolodex";
 import { AddEntrySheet } from "@/components/add-entry-sheet";
@@ -76,6 +77,7 @@ export default function IndexScreen() {
   );
 
   const handleTopicTap = useCallback((topic: Topic) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedTopic(topic);
     setShowEntrySheet(true);
   }, []);

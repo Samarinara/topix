@@ -99,6 +99,7 @@ export function NewTopicModal({ visible, onConfirm, onClose }: Props) {
   };
 
   const handleClose = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Keyboard.dismiss();
     onClose();
   };

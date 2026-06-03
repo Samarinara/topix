@@ -94,6 +94,7 @@ export function AddEntrySheet({
   };
 
   const handleClose = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Keyboard.dismiss();
     onClose();
   };

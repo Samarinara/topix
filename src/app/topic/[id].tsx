@@ -1,18 +1,16 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
-  FlatList,
   Pressable,
   StyleSheet,
   Alert,
-  Platform,
-  Keyboard,
   BackHandler,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   FadeInDown,
   FadeInUp,
@@ -20,6 +18,8 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSequence,
+  withRepeat,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 
@@ -45,6 +45,73 @@ function relativeTime(ts: number): string {
   return `${days}d ago`;
 }
 
+function EntryCard({
+  item,
+  index,
+  topicColor,
+  onLongPress,
+}: {
+  item: Entry;
+  index: number;
+  topicColor: string;
+  onLongPress: (entry: Entry) => void;
+}) {
+  const rippleScale = useSharedValue(0);
+  const rippleOpacity = useSharedValue(0);
+  const rippleX = useSharedValue(0);
+  const rippleY = useSharedValue(0);
+
+  const startRipple = (x: number, y: number) => {
+    "worklet";
+    rippleX.value = x;
+    rippleY.value = y;
+    rippleScale.value = 0;
+    rippleOpacity.value = 0.25;
+    rippleScale.value = withTiming(2.5, { duration: 400 });
+    rippleOpacity.value = withTiming(0, { duration: 400 });
+  };
+
+  const handleLongPress = useCallback(() => onLongPress(item), [item, onLongPress]);
+
+  const tapGesture = Gesture.Tap()
+    .onBegin((e) => {
+      startRipple(e.x, e.y);
+    });
+
+  const rippleStyle = useAnimatedStyle(() => ({
+    position: "absolute",
+    left: rippleX.value - 50,
+    top: rippleY.value - 50,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: topicColor,
+    transform: [{ scale: rippleScale.value }],
+    opacity: rippleOpacity.value,
+  }));
+
+  return (
+    <Animated.View entering={FadeInUp.duration(400).delay(300 + index * 60)}>
+      <GestureDetector gesture={tapGesture}>
+        <Pressable
+          onLongPress={handleLongPress}
+          delayLongPress={400}
+          style={({ pressed }) => [
+            styles.entryCard,
+            pressed && styles.entryCardPressed,
+          ]}
+        >
+          <View style={styles.entryContent}>
+            <Animated.View style={rippleStyle} pointerEvents="none" />
+            <Text style={styles.entryText}>{item.text}</Text>
+            <Text style={styles.entryTime}>{relativeTime(item.createdAt)}</Text>
+          </View>
+        </Pressable>
+      </GestureDetector>
+    </Animated.View>
+  );
+}
+
 export default function TopicEntriesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -57,6 +124,9 @@ export default function TopicEntriesScreen() {
   const [showSheet, setShowSheet] = useState(false);
 
   const animatedBgOpacity = useSharedValue(0);
+  const pulseOpacity = useSharedValue(0);
+  const emptyScale = useSharedValue(1);
+  const emptyOpacity = useSharedValue(0.6);
 
   const loadData = useCallback(async () => {
     const all = await loadTopics();
@@ -66,11 +136,31 @@ export default function TopicEntriesScreen() {
     setAccentColor(t.color);
     setEntries(await loadEntries(id));
     animatedBgOpacity.value = withTiming(1, { duration: 1000 });
-  }, [id, setAccentColor]);
+  }, [id, setAccentColor, animatedBgOpacity]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    emptyScale.value = withRepeat(
+      withSequence(
+        withTiming(1.08, { duration: 1500 }),
+        withTiming(1, { duration: 1500 }),
+      ),
+      -1,
+      true,
+    );
+    emptyOpacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 1500 }),
+        withTiming(0.6, { duration: 1500 }),
+      ),
+      -1,
+      true,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleBack = useCallback(() => {
     if (showSheet) {
@@ -91,6 +181,18 @@ export default function TopicEntriesScreen() {
     backgroundColor: accentColor,
   }));
 
+  const pulseStyle = useAnimatedStyle(() => ({
+    opacity: pulseOpacity.value,
+    backgroundColor: accentColor,
+  }));
+
+  const triggerPulse = useCallback(() => {
+    pulseOpacity.value = withSequence(
+      withTiming(0.15, { duration: 150 }),
+      withTiming(0, { duration: 350 }),
+    );
+  }, [pulseOpacity]);
+
   const handleSaveEntry = useCallback(
     async (text: string) => {
       if (selectedEntry) {
@@ -105,9 +207,10 @@ export default function TopicEntriesScreen() {
         await addEntry(entry);
       }
       setSelectedEntry(null);
-      loadData();
+      await loadData();
+      triggerPulse();
     },
-    [selectedEntry, topic, loadData],
+    [selectedEntry, topic, loadData, triggerPulse],
   );
 
   const handleLongPress = useCallback(
@@ -180,13 +283,20 @@ export default function TopicEntriesScreen() {
         style={[StyleSheet.absoluteFill, bgStyle]}
         pointerEvents="none"
       />
+      <Animated.View
+        style={[StyleSheet.absoluteFill, pulseStyle]}
+        pointerEvents="none"
+      />
 
       <Animated.View
         entering={FadeInDown.duration(400).delay(100)}
         style={[styles.header, { paddingTop: insets.top + 8 }]}
       >
         <Pressable
-          onPress={() => router.back()}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
           style={({ pressed }) => [
             styles.backBtn,
             pressed && styles.backBtnPressed,
@@ -211,22 +321,25 @@ export default function TopicEntriesScreen() {
           { paddingBottom: insets.bottom + 100 },
         ]}
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInUp.duration(400).delay(300 + index * 60)}>
-            <Pressable
-              onLongPress={() => handleLongPress(item)}
-              delayLongPress={400}
-              style={({ pressed }) => [
-                styles.entryCard,
-                pressed && styles.entryCardPressed,
-              ]}
-            >
-              <Text style={styles.entryText}>{item.text}</Text>
-              <Text style={styles.entryTime}>{relativeTime(item.createdAt)}</Text>
-            </Pressable>
-          </Animated.View>
+          <EntryCard
+            item={item}
+            index={index}
+            topicColor={topic.color}
+            onLongPress={handleLongPress}
+          />
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
+            <Animated.View
+              style={[
+                styles.emptyCircle,
+                {
+                  backgroundColor: topic.color + "20",
+                  transform: [{ scale: emptyScale }],
+                  opacity: emptyOpacity,
+                },
+              ]}
+            />
             <Text style={styles.emptyText}>No entries yet</Text>
             <Text style={styles.emptySubtext}>
               Tap the + to add your first thought
@@ -325,6 +438,9 @@ const styles = StyleSheet.create({
   entryCardPressed: {
     backgroundColor: "rgba(255,255,255,0.1)",
   },
+  entryContent: {
+    overflow: "hidden",
+  },
   entryText: {
     color: "#fff",
     fontSize: 16,
@@ -339,7 +455,12 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: "center",
     paddingTop: 120,
-    gap: 8,
+    gap: 12,
+  },
+  emptyCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   emptyText: {
     color: "#555",

@@ -3,6 +3,7 @@ import { StyleSheet, View, Text } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
 import Svg, { Path, Defs, RadialGradient, Stop, Circle, ClipPath } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 
 import { hsvToHex } from '@/data/color-utils';
 
@@ -61,10 +62,18 @@ export function ColorWheel({ hue, saturation, onChange, size = 280 }: Props) {
     [cx, cy, radius, onChange],
   );
 
-  const tapGesture = Gesture.Tap().onEnd((e) => runOnJS(updateColor)(e.x, e.y));
+  const triggerHaptic = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
+  const tapGesture = Gesture.Tap().onEnd((e) => {
+    runOnJS(updateColor)(e.x, e.y);
+    runOnJS(triggerHaptic)();
+  });
   const panGesture = Gesture.Pan()
     .onBegin((e) => runOnJS(updateColor)(e.x, e.y))
-    .onUpdate((e) => runOnJS(updateColor)(e.x, e.y));
+    .onUpdate((e) => runOnJS(updateColor)(e.x, e.y))
+    .onEnd(() => runOnJS(triggerHaptic)());
   const wheelGesture = Gesture.Simultaneous(panGesture, tapGesture);
 
   return (
