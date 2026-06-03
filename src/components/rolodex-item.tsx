@@ -4,6 +4,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 
+import { useTheme } from "@/hooks/use-theme";
 import type { Topic } from "@/data/types";
 
 const ITEM_HEIGHT = 72;
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export function RolodexItem({ index, item, scrollY, containerHeight }: Props) {
+  const theme = useTheme();
   const centerOffset = (containerHeight - ITEM_HEIGHT) / 2;
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -44,16 +46,19 @@ export function RolodexItem({ index, item, scrollY, containerHeight }: Props) {
   return (
     <Animated.View style={[styles.item, animatedStyle]}>
       {item.isNew ? (
-        <View style={styles.newTopicRow}>
+        <View style={[styles.newTopicRow, {
+          backgroundColor: theme.backgroundCard,
+          borderColor: theme.line,
+        }]}>
           <View style={styles.plusCircle}>
             <Text style={styles.plusText}>+</Text>
           </View>
-          <Text style={[styles.itemText, styles.newText]}>New Topic</Text>
+          <Text style={[styles.itemText, { color: theme.textSecondary }]}>New Topic</Text>
         </View>
       ) : (
         <View style={styles.topicRow}>
           <View style={[styles.colorDot, { backgroundColor: item.color }]} />
-          <Text style={styles.itemText}>{item.name}</Text>
+          <Text style={[styles.itemText, { color: theme.text }]}>{item.name}</Text>
         </View>
       )}
     </Animated.View>
@@ -78,7 +83,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   itemText: {
-    color: "#ffffff",
     fontSize: 20,
     fontWeight: "500",
     flex: 1,
@@ -94,13 +98,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
-    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 16,
     paddingVertical: 10,
     paddingHorizontal: 20,
     marginHorizontal: 12,
     borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.1)",
     borderStyle: "dashed",
   },
   plusCircle: {
@@ -118,10 +120,5 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "800",
     marginTop: -2,
-  },
-  newText: {
-    color: "#e0e0e0",
-    fontWeight: "600",
-    letterSpacing: 0.3,
   },
 });

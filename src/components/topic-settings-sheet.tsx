@@ -22,6 +22,7 @@ import * as Haptics from "expo-haptics";
 
 import { ColorWheel } from "./color-wheel";
 import { hexToHsv, hsvToHex } from "@/data/color-utils";
+import { useTheme } from "@/hooks/use-theme";
 import type { Topic } from "@/data/types";
 
 type Props = {
@@ -33,6 +34,7 @@ type Props = {
 };
 
 export function TopicSettingsSheet({ visible, topic, onSave, onDelete, onClose }: Props) {
+  const theme = useTheme();
   const { h: initialHue, s: initialSat } = hexToHsv(topic.color);
   const [name, setName] = useState(topic.name);
   const [hue, setHue] = useState(initialHue);
@@ -128,22 +130,22 @@ export function TopicSettingsSheet({ visible, topic, onSave, onDelete, onClose }
 
   return (
     <Animated.View style={[styles.overlay, containerStyle]}>
-      <Pressable style={styles.backdrop} onPress={handleClose} />
+      <Pressable style={[styles.backdrop, { backgroundColor: theme.backdrop }]} onPress={handleClose} />
       <Animated.View
         entering={SlideInUp.duration(300)}
         exiting={SlideOutDown.duration(250)}
-        style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}
+        style={[styles.sheet, { backgroundColor: theme.backgroundSheet, paddingBottom: insets.bottom + 16 }]}
       >
-        <View style={styles.handle} />
-        <Text style={styles.title}>Topic Settings</Text>
+        <View style={[styles.handle, { backgroundColor: theme.handle }]} />
+        <Text style={[styles.title, { color: theme.text }]}>Topic Settings</Text>
 
         <TextInput
           ref={inputRef}
-          style={styles.input}
+          style={[styles.input, { backgroundColor: theme.backgroundElement, color: theme.text }]}
           value={name}
           onChangeText={setName}
           placeholder="Topic name"
-          placeholderTextColor="#666"
+          placeholderTextColor={theme.textTertiary}
         />
 
         <View
@@ -169,7 +171,7 @@ export function TopicSettingsSheet({ visible, topic, onSave, onDelete, onClose }
             styles.saveBtn,
             pressed && styles.saveBtnPressed,
             !hasChanges && styles.saveBtnDisabled,
-            { backgroundColor: hasChanges ? currentColor : "#2a2a3e" },
+            { backgroundColor: hasChanges ? currentColor : theme.backgroundElement },
             hasChanges && { shadowColor: currentColor },
           ]}
           onPress={handleSave}
@@ -197,10 +199,8 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0,0,0,0.5)",
   },
   sheet: {
-    backgroundColor: "#1a1a2e",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -211,20 +211,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#444",
     alignSelf: "center",
     marginBottom: 12,
   },
   title: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#fff",
     marginBottom: 16,
     textAlign: "center",
   },
   input: {
-    backgroundColor: "#2a2a3e",
-    color: "#fff",
     fontSize: 16,
     borderRadius: 12,
     padding: 14,

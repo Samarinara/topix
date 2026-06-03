@@ -6,6 +6,7 @@ import Svg, { Path, Defs, RadialGradient, Stop, Circle, ClipPath } from 'react-n
 import * as Haptics from 'expo-haptics';
 
 import { hsvToHex } from '@/data/color-utils';
+import { useTheme } from '@/hooks/use-theme';
 
 const SLICES = 72;
 const DEG_PER_SLICE = 360 / SLICES;
@@ -28,6 +29,7 @@ function slicePathData(cx: number, cy: number, r: number, startDeg: number, endD
 }
 
 export function ColorWheel({ hue, saturation, onChange, size = 280 }: Props) {
+  const theme = useTheme();
   const cx = size / 2;
   const cy = size / 2;
   const radius = size / 2 - 4;
@@ -109,8 +111,8 @@ export function ColorWheel({ hue, saturation, onChange, size = 280 }: Props) {
       </GestureDetector>
 
       <View style={styles.previewRow}>
-        <View style={[styles.previewCircle, { backgroundColor: hsvToHex(hue, saturation, 1) }]} />
-        <Text style={styles.hexText}>{hsvToHex(hue, saturation, 1)}</Text>
+        <View style={[styles.previewCircle, { backgroundColor: hsvToHex(hue, saturation, 1), borderColor: theme.line }]} />
+        <Text style={[styles.hexText, { color: theme.textTertiary }]}>{hsvToHex(hue, saturation, 1)}</Text>
       </View>
     </View>
   );
@@ -132,10 +134,8 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
   },
   hexText: {
-    color: '#ccc',
     fontSize: 14,
     fontFamily: 'monospace',
   },

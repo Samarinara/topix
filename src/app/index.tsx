@@ -17,12 +17,14 @@ import { NewTopicModal } from "@/components/new-topic-modal";
 import { AppSettingsSheet } from "@/components/app-settings-sheet";
 import { LogoIcon } from "@/components/logo-icon";
 import { useAccentColor } from "@/context/accent-color";
+import { useTheme } from "@/hooks/use-theme";
 import { loadTopics, addTopic, addEntry } from "@/data/storage";
 import type { Topic, Entry } from "@/data/types";
 
 export default function IndexScreen() {
   const router = useRouter();
-  const { accentColor, setAccentColor, isDark } = useAccentColor();
+  const { accentColor, setAccentColor } = useAccentColor();
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
@@ -142,13 +144,13 @@ export default function IndexScreen() {
     <View
       style={[
         styles.container,
-        { backgroundColor: isDark ? "#08080e" : "#f0f0f5" },
+        { backgroundColor: theme.background },
       ]}
     >
       <LinearGradient
         colors={["transparent", displayColor, displayColor, "transparent"]}
         locations={[0.05, 0.4, 0.6, 0.95]}
-        style={[styles.accentOverlay, { opacity: isDark ? 0.5 : 0.3 }]}
+        style={[styles.accentOverlay, { opacity: theme.accentOverlay }]}
         pointerEvents="none"
       />
 

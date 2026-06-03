@@ -1,5 +1,6 @@
-import { useColorScheme } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
+
+import { useAccentColor } from '@/context/accent-color';
 
 type Props = {
   size?: number;
@@ -8,8 +9,7 @@ type Props = {
 const SCALE = 4000;
 
 export function LogoIcon({ size = 120 }: Props) {
-  const scheme = useColorScheme();
-  const isDark = scheme === 'dark';
+  const { isDark } = useAccentColor();
   const color = isDark ? '#ffffff' : '#000000';
 
   return (

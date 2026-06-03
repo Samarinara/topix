@@ -18,6 +18,8 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
+import { useTheme } from "@/hooks/use-theme";
+
 type Props = {
   visible: boolean;
   onSave: (text: string) => void;
@@ -31,6 +33,7 @@ export function AddEntrySheet({
   onClose,
   initialText,
 }: Props) {
+  const theme = useTheme();
   const [text, setText] = useState(initialText ?? "");
   const inputRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
@@ -101,22 +104,22 @@ export function AddEntrySheet({
 
   return (
     <Animated.View style={[styles.overlay, containerStyle]}>
-      <Pressable style={styles.backdrop} onPress={handleClose} />
+      <Pressable style={[styles.backdrop, { backgroundColor: theme.backdrop }]} onPress={handleClose} />
       <Animated.View
         entering={SlideInUp.duration(300)}
         exiting={SlideOutDown.duration(250)}
-        style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}
+        style={[styles.sheet, { backgroundColor: theme.backgroundSheet, paddingBottom: insets.bottom + 16 }]}
       >
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: theme.text }]}>
           {initialText ? "Edit Entry" : "New Entry"}
         </Text>
         <TextInput
           ref={inputRef}
-          style={styles.input}
+          style={[styles.input, { backgroundColor: theme.backgroundElement, color: theme.text }]}
           value={text}
           onChangeText={setText}
           placeholder="Brain dump here..."
-          placeholderTextColor="#999"
+          placeholderTextColor={theme.textTertiary}
           multiline
           autoFocus
         />
@@ -146,10 +149,8 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0,0,0,0.4)",
   },
   sheet: {
-    backgroundColor: "#1a1a2e",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 20,
@@ -158,12 +159,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#fff",
     marginBottom: 12,
   },
   input: {
-    backgroundColor: "#2a2a3e",
-    color: "#fff",
     fontSize: 16,
     borderRadius: 12,
     padding: 14,

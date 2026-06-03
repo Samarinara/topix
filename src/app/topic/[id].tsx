@@ -26,6 +26,8 @@ import * as Haptics from "expo-haptics";
 import { AddEntrySheet } from "@/components/add-entry-sheet";
 import { TopicSettingsSheet } from "@/components/topic-settings-sheet";
 import { useAccentColor } from "@/context/accent-color";
+import { useTheme } from "@/hooks/use-theme";
+import { Colors } from "@/constants/theme";
 import {
   loadTopics,
   loadEntries,
@@ -53,11 +55,13 @@ function EntryCard({
   index,
   topicColor,
   onLongPress,
+  theme,
 }: {
   item: Entry;
   index: number;
   topicColor: string;
   onLongPress: (entry: Entry) => void;
+  theme: typeof Colors.light | typeof Colors.dark;
 }) {
   const rippleScale = useSharedValue(0);
   const rippleOpacity = useSharedValue(0);
@@ -99,15 +103,15 @@ function EntryCard({
         <Pressable
           onLongPress={handleLongPress}
           delayLongPress={400}
-          style={({ pressed }) => [
-            styles.entryCard,
-            pressed && styles.entryCardPressed,
-          ]}
+          style={({ pressed }) => ({
+            ...styles.entryCard,
+            backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundCard,
+          })}
         >
           <View style={styles.entryContent}>
             <Animated.View style={rippleStyle} pointerEvents="none" />
-            <Text style={styles.entryText}>{item.text}</Text>
-            <Text style={styles.entryTime}>{relativeTime(item.createdAt)}</Text>
+            <Text style={[styles.entryText, { color: theme.text }]}>{item.text}</Text>
+            <Text style={[styles.entryTime, { color: theme.textTertiary }]}>{relativeTime(item.createdAt)}</Text>
           </View>
         </Pressable>
       </GestureDetector>
@@ -119,7 +123,8 @@ export default function TopicEntriesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { setAccentColor, isDark, accentColor } = useAccentColor();
+  const { setAccentColor, accentColor } = useAccentColor();
+  const theme = useTheme();
 
   const [topic, setTopic] = useState<Topic | null>(null);
   const [entries, setEntries] = useState<Entry[]>([]);
@@ -184,8 +189,9 @@ export default function TopicEntriesScreen() {
     return () => sub.remove();
   }, [handleBack]);
 
+  const isDarkBg = theme.background === Colors.dark.background;
   const bgStyle = useAnimatedStyle(() => ({
-    opacity: animatedBgOpacity.value * (isDark ? 0.08 : 0.06),
+    opacity: animatedBgOpacity.value * (isDarkBg ? 0.08 : 0.06),
     backgroundColor: accentColor,
   }));
 
@@ -286,11 +292,11 @@ export default function TopicEntriesScreen() {
           styles.container,
           {
             paddingTop: insets.top,
-            backgroundColor: isDark ? "#08080e" : "#f0f0f5",
+            backgroundColor: theme.background,
           },
         ]}
       >
-        <Text style={styles.loadingText}>Topic not found</Text>
+        <Text style={[styles.loadingText, { color: theme.textTertiary }]}>Topic not found</Text>
       </View>
     );
   }
@@ -299,7 +305,7 @@ export default function TopicEntriesScreen() {
     <View
       style={[
         styles.container,
-        { backgroundColor: isDark ? "#08080e" : "#f0f0f5" },
+        { backgroundColor: theme.background },
       ]}
     >
       <StatusBar style="light" />
@@ -321,12 +327,12 @@ export default function TopicEntriesScreen() {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
-          style={({ pressed }) => [
-            styles.backBtn,
-            pressed && styles.backBtnPressed,
-          ]}
+          style={({ pressed }) => ({
+            ...styles.backBtn,
+            backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement,
+          })}
         >
-          <Text style={styles.backArrow}>‹</Text>
+          <Text style={[styles.backArrow, { color: theme.text }]}>‹</Text>
         </Pressable>
         <Pressable
           style={styles.headerTitleArea}
@@ -335,7 +341,7 @@ export default function TopicEntriesScreen() {
             setShowSettings(true);
           }}
         >
-          <Text style={styles.headerTitle} numberOfLines={1}>
+          <Text style={[styles.headerTitle, { color: theme.text }]} numberOfLines={1}>
             {topic.name}
           </Text>
           <Animated.View
@@ -358,6 +364,7 @@ export default function TopicEntriesScreen() {
             index={index}
             topicColor={topic.color}
             onLongPress={handleLongPress}
+            theme={theme}
           />
         )}
         ListEmptyComponent={
@@ -372,8 +379,8 @@ export default function TopicEntriesScreen() {
                 },
               ]}
             />
-            <Text style={styles.emptyText}>No entries yet</Text>
-            <Text style={styles.emptySubtext}>
+            <Text style={[styles.emptyText, { color: theme.textTertiary }]}>No entries yet</Text>
+            <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>
               Tap the + to add your first thought
             </Text>
           </View>
@@ -393,7 +400,7 @@ export default function TopicEntriesScreen() {
             setShowSheet(true);
           }}
         >
-          <Text style={styles.fabText}>+</Text>
+          <Text style={[styles.fabText, { color: theme.textInverse }]}>+</Text>
         </Pressable>
       </Animated.View>
 
@@ -425,7 +432,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingText: {
-    color: "#888",
     fontSize: 16,
     textAlign: "center",
     marginTop: 100,
@@ -441,7 +447,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.06)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -449,7 +454,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   backArrow: {
-    color: "#fff",
     fontSize: 32,
     lineHeight: 34,
     fontWeight: "300",
@@ -467,7 +471,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   headerTitle: {
-    color: "#fff",
     fontSize: 22,
     fontWeight: "700",
     flex: 1,
@@ -478,25 +481,19 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   entryCard: {
-    backgroundColor: "rgba(255,255,255,0.05)",
     borderRadius: 18,
     padding: 20,
     gap: 10,
-  },
-  entryCardPressed: {
-    backgroundColor: "rgba(255,255,255,0.1)",
   },
   entryContent: {
     overflow: "hidden",
   },
   entryText: {
-    color: "#fff",
     fontSize: 16,
     lineHeight: 24,
     fontWeight: "400",
   },
   entryTime: {
-    color: "#555",
     fontSize: 12,
     fontWeight: "500",
   },
@@ -511,12 +508,10 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   emptyText: {
-    color: "#555",
     fontSize: 18,
     fontWeight: "600",
   },
   emptySubtext: {
-    color: "#444",
     fontSize: 14,
   },
   fab: {
@@ -539,7 +534,6 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   fabText: {
-    color: "#fff",
     fontSize: 32,
     fontWeight: "300",
     lineHeight: 34,

@@ -21,6 +21,7 @@ import * as Haptics from "expo-haptics";
 
 import { ColorWheel } from "./color-wheel";
 import { hsvToHex } from "@/data/color-utils";
+import { useTheme } from "@/hooks/use-theme";
 
 type Props = {
   visible: boolean;
@@ -29,6 +30,7 @@ type Props = {
 };
 
 export function NewTopicModal({ visible, onConfirm, onClose }: Props) {
+  const theme = useTheme();
   const [name, setName] = useState("");
   const [hue, setHue] = useState(200);
   const [sat, setSat] = useState(0.7);
@@ -106,22 +108,22 @@ export function NewTopicModal({ visible, onConfirm, onClose }: Props) {
 
   return (
     <Animated.View style={[styles.overlay, containerStyle]}>
-      <Pressable style={styles.backdrop} onPress={handleClose} />
+      <Pressable style={[styles.backdrop, { backgroundColor: theme.backdrop }]} onPress={handleClose} />
       <Animated.View
         entering={SlideInUp.duration(300)}
         exiting={SlideOutDown.duration(250)}
-        style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}
+        style={[styles.sheet, { backgroundColor: theme.backgroundSheet, paddingBottom: insets.bottom + 16 }]}
       >
-        <View style={styles.handle} />
-        <Text style={styles.title}>New Topic</Text>
+        <View style={[styles.handle, { backgroundColor: theme.handle }]} />
+        <Text style={[styles.title, { color: theme.text }]}>New Topic</Text>
 
         <TextInput
           ref={inputRef}
-          style={styles.input}
+          style={[styles.input, { backgroundColor: theme.backgroundElement, color: theme.text }]}
           value={name}
           onChangeText={setName}
           placeholder="Topic name"
-          placeholderTextColor="#666"
+          placeholderTextColor={theme.textTertiary}
         />
 
         <View
@@ -147,7 +149,7 @@ export function NewTopicModal({ visible, onConfirm, onClose }: Props) {
             styles.createBtn,
             pressed && styles.createBtnPressed,
             !name.trim() && styles.createBtnDisabled,
-            { backgroundColor: name.trim() ? currentColor : "#2a2a3e" },
+            { backgroundColor: name.trim() ? currentColor : theme.backgroundElement },
             name.trim() && { shadowColor: currentColor },
           ]}
           onPress={handleCreate}
@@ -168,10 +170,8 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0,0,0,0.5)",
   },
   sheet: {
-    backgroundColor: "#1a1a2e",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -182,20 +182,16 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#444",
     alignSelf: "center",
     marginBottom: 12,
   },
   title: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#fff",
     marginBottom: 16,
     textAlign: "center",
   },
   input: {
-    backgroundColor: "#2a2a3e",
-    color: "#fff",
     fontSize: 16,
     borderRadius: 12,
     padding: 14,

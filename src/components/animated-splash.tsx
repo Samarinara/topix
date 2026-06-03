@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LogoIcon } from './logo-icon';
+import { useTheme } from '@/hooks/use-theme';
 
 type Props = {
   onDismiss: () => void;
@@ -20,6 +21,12 @@ const HOLD_DURATION = 300;
 const EXIT_DURATION = 500;
 
 export function AnimatedSplash({ onDismiss }: Props) {
+  const theme = useTheme();
+  const isDarkBg = theme.background === '#08080E';
+  const gradientColors: [string, string, string] = isDarkBg
+    ? ['#08080e', '#0d0d1a', '#08080e']
+    : ['#f0f0f5', '#e8e8f0', '#f0f0f5'];
+
   const logoOpacity = useSharedValue(0);
   const logoScale = useSharedValue(0.85);
   const textOpacity = useSharedValue(0);
@@ -97,15 +104,15 @@ export function AnimatedSplash({ onDismiss }: Props) {
   }));
 
   return (
-    <Animated.View style={[styles.overlay, overlayAnimatedStyle]}>
+    <Animated.View style={[styles.overlay, { backgroundColor: theme.background }, overlayAnimatedStyle]}>
       <LinearGradient
-        colors={['#08080e', '#0d0d1a', '#08080e']}
+        colors={gradientColors}
         style={StyleSheet.absoluteFill}
       />
       <Animated.View style={[styles.logoContainer, logoAnimatedStyle]}>
         <LogoIcon size={120} />
       </Animated.View>
-      <Animated.Text style={[styles.text, textAnimatedStyle]}>
+      <Animated.Text style={[styles.text, { color: theme.text }, textAnimatedStyle]}>
         topix
       </Animated.Text>
     </Animated.View>
@@ -118,7 +125,6 @@ const styles = StyleSheet.create({
     zIndex: 999,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#08080e',
   },
   logoContainer: {
     marginBottom: 4,
@@ -126,7 +132,6 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 28,
     fontWeight: '600',
-    color: '#ffffff',
     letterSpacing: 2,
   },
 });

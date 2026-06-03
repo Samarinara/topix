@@ -15,6 +15,7 @@ import * as Haptics from "expo-haptics";
 
 import { RolodexItem } from "./rolodex-item";
 import { HoldIndicator } from "./hold-indicator";
+import { useTheme } from "@/hooks/use-theme";
 import type { Topic } from "@/data/types";
 
 const ITEM_HEIGHT = 72;
@@ -36,6 +37,7 @@ export function Rolodex({
   onNewTopic,
   onFocusChange,
 }: Props) {
+  const theme = useTheme();
   const [containerHeight, setContainerHeight] = useState(0);
   const [focusedIndexState, setFocusedIndexState] = useState(0);
   const scrollY = useSharedValue(0);
@@ -207,9 +209,9 @@ export function Rolodex({
           ]}
           pointerEvents="none"
         >
-          <View style={styles.selectionLine} />
+          <View style={[styles.selectionLine, { backgroundColor: theme.line }]} />
           <HoldIndicator progress={holdProgress} color={currentTopicColor} />
-          <View style={styles.selectionLineBottom} />
+          <View style={[styles.selectionLineBottom, { backgroundColor: theme.line }]} />
         </View>
       </View>
     </GestureDetector>
@@ -230,7 +232,6 @@ const styles = StyleSheet.create({
   },
   selectionLine: {
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.08)",
   },
   selectionLineBottom: {
     position: "absolute",
@@ -238,6 +239,5 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: "rgba(255,255,255,0.08)",
   },
 });
