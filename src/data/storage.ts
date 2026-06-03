@@ -8,6 +8,27 @@ import {
 import type { Topic, Entry } from './types';
 
 const ENTRIES_DIR = 'topix_entries';
+const THEME_PATH = 'topix_theme_mode.json';
+
+export type ThemeMode = 'system' | 'light' | 'dark';
+
+export async function loadThemeMode(): Promise<ThemeMode> {
+  try {
+    const json = await readAsStringAsync(
+      (documentDirectory ?? '') + THEME_PATH,
+    );
+    return JSON.parse(json);
+  } catch {
+    return 'system';
+  }
+}
+
+export async function saveThemeMode(mode: ThemeMode): Promise<void> {
+  await writeAsStringAsync(
+    (documentDirectory ?? '') + THEME_PATH,
+    JSON.stringify(mode),
+  );
+}
 
 function topicsPath() {
   return (documentDirectory ?? '') + 'topix_topics.json';

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { StyleSheet, View, BackHandler } from "react-native";
+import { StyleSheet, View, Pressable, BackHandler } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import {
   useSharedValue,
@@ -8,11 +8,14 @@ import {
   runOnJS,
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
 import { Rolodex } from "@/components/rolodex";
 import { AddEntrySheet } from "@/components/add-entry-sheet";
 import { NewTopicModal } from "@/components/new-topic-modal";
+import { AppSettingsSheet } from "@/components/app-settings-sheet";
+import { LogoIcon } from "@/components/logo-icon";
 import { useAccentColor } from "@/context/accent-color";
 import { loadTopics, addTopic, addEntry } from "@/data/storage";
 import type { Topic, Entry } from "@/data/types";
@@ -20,10 +23,12 @@ import type { Topic, Entry } from "@/data/types";
 export default function IndexScreen() {
   const router = useRouter();
   const { accentColor, setAccentColor, isDark } = useAccentColor();
+  const insets = useSafeAreaInsets();
   const [topics, setTopics] = useState<Topic[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [showEntrySheet, setShowEntrySheet] = useState(false);
   const [showNewTopic, setShowNewTopic] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [displayColor, setDisplayColor] = useState(accentColor);
 
   const animatedBg = useSharedValue(accentColor);
@@ -49,6 +54,10 @@ export default function IndexScreen() {
 
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (showSettings) {
+        setShowSettings(false);
+        return true;
+      }
       if (showNewTopic) {
         setShowNewTopic(false);
         return true;
@@ -61,7 +70,7 @@ export default function IndexScreen() {
       return false;
     });
     return () => sub.remove();
-  }, [showNewTopic, showEntrySheet]);
+  }, [showSettings, showNewTopic, showEntrySheet]);
 
   const initialFocusSet = useRef(false);
 
@@ -139,9 +148,17 @@ export default function IndexScreen() {
       <LinearGradient
         colors={["transparent", displayColor, displayColor, "transparent"]}
         locations={[0.05, 0.4, 0.6, 0.95]}
-        style={[styles.accentOverlay, { opacity: isDark ? 0.5 : 0.2 }]}
+        style={[styles.accentOverlay, { opacity: isDark ? 0.5 : 0.3 }]}
         pointerEvents="none"
       />
+
+      <Pressable
+        style={[styles.logoBtn, { top: insets.top + 8 }]}
+        onPress={() => setShowSettings(true)}
+        hitSlop={8}
+      >
+        <LogoIcon size={32} />
+      </Pressable>
 
       <Rolodex
         topics={topics}
@@ -165,6 +182,11 @@ export default function IndexScreen() {
         onConfirm={handleCreateTopic}
         onClose={() => setShowNewTopic(false)}
       />
+
+      <AppSettingsSheet
+        visible={showSettings}
+        onClose={() => setShowSettings(false)}
+      />
     </View>
   );
 }
@@ -175,5 +197,15 @@ const styles = StyleSheet.create({
   },
   accentOverlay: {
     ...StyleSheet.absoluteFill,
+  },
+  logoBtn: {
+    position: "absolute",
+    alignSelf: "center",
+    zIndex: 100,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
