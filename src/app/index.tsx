@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { StyleSheet, View, BackHandler } from "react-native";
 import { useRouter } from "expo-router";
-import Animated, {
+import {
   useSharedValue,
-  useAnimatedStyle,
+  useAnimatedReaction,
   withTiming,
+  runOnJS,
 } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { Rolodex } from "@/components/rolodex";
 import { AddEntrySheet } from "@/components/add-entry-sheet";
@@ -21,15 +23,25 @@ export default function IndexScreen() {
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [showEntrySheet, setShowEntrySheet] = useState(false);
   const [showNewTopic, setShowNewTopic] = useState(false);
+  const [displayColor, setDisplayColor] = useState(accentColor);
 
   const animatedBg = useSharedValue(accentColor);
+
+  useAnimatedReaction(
+    () => animatedBg.value,
+    (value) => {
+      runOnJS(setDisplayColor)(value);
+    },
+  );
 
   useEffect(() => {
     loadTopics().then(setTopics);
   }, []);
 
   useEffect(() => {
-    animatedBg.value = withTiming(accentColor, { duration: 800 });
+    // eslint-disable-next-line react-hooks/immutability
+    animatedBg.value = withTiming(accentColor, { duration: 250 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accentColor]);
 
   useEffect(() => {
@@ -47,10 +59,6 @@ export default function IndexScreen() {
     });
     return () => sub.remove();
   }, [showNewTopic, showEntrySheet]);
-
-  const bgStyle = useAnimatedStyle(() => ({
-    backgroundColor: animatedBg.value,
-  }));
 
   const reloadTopics = useCallback(async () => {
     setTopics(await loadTopics());
@@ -115,11 +123,12 @@ export default function IndexScreen() {
         { backgroundColor: isDark ? "#08080e" : "#f0f0f5" },
       ]}
     >
-      <Animated.View
+      <LinearGradient
+        colors={["transparent", displayColor, displayColor, "transparent"]}
+        locations={[0.1, 0.5, 0.5, 0.9]}
         style={[
           styles.accentOverlay,
-          bgStyle,
-          { opacity: isDark ? 0.07 : 0.05 },
+          { opacity: isDark ? 0.5 : 0.2 },
         ]}
         pointerEvents="none"
       />
