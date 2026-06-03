@@ -147,7 +147,8 @@ export function NewTopicModal({ visible, onConfirm, onClose }: Props) {
             styles.createBtn,
             pressed && styles.createBtnPressed,
             !name.trim() && styles.createBtnDisabled,
-            { backgroundColor: name.trim() ? currentColor : "#333" },
+            { backgroundColor: name.trim() ? currentColor : "#2a2a3e" },
+            name.trim() && { shadowColor: currentColor },
           ]}
           onPress={handleCreate}
           disabled={!name.trim()}
@@ -208,16 +209,22 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: "center",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   createBtnPressed: {
-    opacity: 0.7,
+    opacity: 0.85,
+    transform: [{ scale: 0.97 }],
   },
   createBtnDisabled: {
-    opacity: 0.4,
+    opacity: 0.3,
   },
   createBtnText: {
     color: "#fff",
     fontSize: 17,
     fontWeight: "700",
+    letterSpacing: 0.3,
   },
 });
