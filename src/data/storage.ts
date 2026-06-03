@@ -3,6 +3,7 @@ import {
   readAsStringAsync,
   writeAsStringAsync,
   makeDirectoryAsync,
+  deleteAsync,
 } from 'expo-file-system/legacy';
 import type { Topic, Entry } from './types';
 
@@ -41,6 +42,29 @@ export async function updateTopicColor(topicId: string, color: string): Promise<
   if (idx !== -1) {
     topics[idx] = { ...topics[idx], color };
     await saveTopics(topics);
+  }
+}
+
+export async function updateTopic(
+  topicId: string,
+  updates: Partial<Pick<Topic, 'name' | 'color'>>,
+): Promise<void> {
+  const topics = await loadTopics();
+  const idx = topics.findIndex((t) => t.id === topicId);
+  if (idx !== -1) {
+    topics[idx] = { ...topics[idx], ...updates };
+    await saveTopics(topics);
+  }
+}
+
+export async function deleteTopic(topicId: string): Promise<void> {
+  const topics = await loadTopics();
+  const filtered = topics.filter((t) => t.id !== topicId);
+  await saveTopics(filtered);
+  try {
+    await deleteAsync(entriesPath(topicId));
+  } catch {
+    // entries file may not exist
   }
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { StyleSheet, View, BackHandler } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import {
   useSharedValue,
   useAnimatedReaction,
@@ -35,9 +35,11 @@ export default function IndexScreen() {
     },
   );
 
-  useEffect(() => {
-    loadTopics().then(setTopics);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      loadTopics().then(setTopics);
+    }, []),
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/immutability

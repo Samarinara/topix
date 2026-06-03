@@ -24,6 +24,7 @@ import Animated, {
 import * as Haptics from "expo-haptics";
 
 import { AddEntrySheet } from "@/components/add-entry-sheet";
+import { TopicSettingsSheet } from "@/components/topic-settings-sheet";
 import { useAccentColor } from "@/context/accent-color";
 import {
   loadTopics,
@@ -31,6 +32,8 @@ import {
   addEntry,
   updateEntry,
   deleteEntry,
+  updateTopic,
+  deleteTopic,
 } from "@/data/storage";
 import type { Topic, Entry } from "@/data/types";
 
@@ -122,6 +125,7 @@ export default function TopicEntriesScreen() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [showSheet, setShowSheet] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const animatedBgOpacity = useSharedValue(0);
   const pulseOpacity = useSharedValue(0);
@@ -163,13 +167,17 @@ export default function TopicEntriesScreen() {
   }, []);
 
   const handleBack = useCallback(() => {
+    if (showSettings) {
+      setShowSettings(false);
+      return true;
+    }
     if (showSheet) {
       setShowSheet(false);
       setSelectedEntry(null);
       return true;
     }
     return false;
-  }, [showSheet]);
+  }, [showSheet, showSettings]);
 
   useEffect(() => {
     const sub = BackHandler.addEventListener("hardwareBackPress", handleBack);
@@ -255,6 +263,22 @@ export default function TopicEntriesScreen() {
     [loadData],
   );
 
+  const handleSaveSettings = useCallback(
+    async (name: string, color: string) => {
+      if (!topic) return;
+      await updateTopic(topic.id, { name, color });
+      setAccentColor(color);
+      await loadData();
+    },
+    [topic, setAccentColor, loadData],
+  );
+
+  const handleDeleteTopic = useCallback(async () => {
+    if (!topic) return;
+    await deleteTopic(topic.id);
+    router.back();
+  }, [topic, router]);
+
   if (!topic) {
     return (
       <View
@@ -304,13 +328,21 @@ export default function TopicEntriesScreen() {
         >
           <Text style={styles.backArrow}>‹</Text>
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {topic.name}
-        </Text>
-        <Animated.View
-          entering={BounceIn.duration(600).delay(250)}
-          style={[styles.headerDot, { backgroundColor: topic.color }]}
-        />
+        <Pressable
+          style={styles.headerTitleArea}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowSettings(true);
+          }}
+        >
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {topic.name}
+          </Text>
+          <Animated.View
+            entering={BounceIn.duration(600).delay(250)}
+            style={[styles.headerDot, { backgroundColor: topic.color }]}
+          />
+        </Pressable>
       </Animated.View>
 
       <Animated.FlatList
@@ -374,6 +406,16 @@ export default function TopicEntriesScreen() {
         }}
         initialText={selectedEntry?.text}
       />
+
+      {topic && (
+        <TopicSettingsSheet
+          visible={showSettings}
+          topic={topic}
+          onSave={handleSaveSettings}
+          onDelete={handleDeleteTopic}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
     </View>
   );
 }
@@ -412,6 +454,12 @@ const styles = StyleSheet.create({
     lineHeight: 34,
     fontWeight: "300",
     marginLeft: -2,
+  },
+  headerTitleArea: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: 12,
   },
   headerDot: {
     width: 12,
