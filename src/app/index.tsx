@@ -125,11 +125,8 @@ export default function IndexScreen() {
     >
       <LinearGradient
         colors={["transparent", displayColor, displayColor, "transparent"]}
-        locations={[0.1, 0.5, 0.5, 0.9]}
-        style={[
-          styles.accentOverlay,
-          { opacity: isDark ? 0.5 : 0.2 },
-        ]}
+        locations={[0.1, 0.4, 0.6, 0.9]}
+        style={[styles.accentOverlay, { opacity: isDark ? 0.5 : 0.2 }]}
         pointerEvents="none"
       />
 
