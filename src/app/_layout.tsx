@@ -1,6 +1,11 @@
+import { useState, useCallback, useEffect } from "react";
 import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AccentColorProvider, useAccentColor } from "@/context/accent-color";
+import { AnimatedSplash } from "@/components/animated-splash";
+
+SplashScreen.preventAutoHideAsync();
 
 function Navigation() {
   const { isDark } = useAccentColor();
@@ -30,10 +35,21 @@ function Navigation() {
 }
 
 export default function RootLayout() {
+  const [isSplashDone, setIsSplashDone] = useState(false);
+
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
+  const handleSplashDismiss = useCallback(() => {
+    setIsSplashDone(true);
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#08080e" }}>
       <AccentColorProvider>
         <Navigation />
+        {!isSplashDone && <AnimatedSplash onDismiss={handleSplashDismiss} />}
       </AccentColorProvider>
     </GestureHandlerRootView>
   );
