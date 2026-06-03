@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { StyleSheet, View, BackHandler } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -60,6 +60,15 @@ export default function IndexScreen() {
     });
     return () => sub.remove();
   }, [showNewTopic, showEntrySheet]);
+
+  const initialFocusSet = useRef(false);
+
+  useEffect(() => {
+    if (topics.length > 0 && !initialFocusSet.current) {
+      initialFocusSet.current = true;
+      setAccentColor(topics[0].color);
+    }
+  }, [topics, setAccentColor]);
 
   const reloadTopics = useCallback(async () => {
     setTopics(await loadTopics());
