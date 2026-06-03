@@ -1,56 +1,18 @@
-# Welcome to your Expo app 👋
+# topix
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**A visual brain-dump journal for your everyday thoughts.**
 
-## Get started
+topix is a beautiful, color-driven journaling app where every topic has its own personality. Spin through your topics like a rolodex, dump your thoughts freely, and let the app's accent colors bring your notes to life.
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+- **Rolodex Navigation** — Flip through your topics with a smooth scroll. Each topic gets its own color, and the entire UI adapts to it.
+- **Brain-Dump Entries** — Tap any topic to quickly jot down a thought. No templates, no structure — just write.
+- **Color-Coded Everything** — Every topic has a custom color that you decide. The app's background gradient, FAB, and theme accent all follow along.
+- **Light / Dark / System Themes** — Don't worry about flashbangs during midnight thoughts.
+- **Haptic Feedback** — Subtle taps and pulses throughout the UI make every interaction feel solid.
+- **Persistent Storage** — All topics and entries are saved locally as JSON — no account, no cloud, no fuss.
 
-2. Start the app
+## Tech Stack
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-### Other setup steps
-
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Built with **Expo** (React Native) using **expo-router** for file-based navigation, **react-native-reanimated** for performant animations, **react-native-gesture-handler** for gesture-driven interactions, and **react-native-svg** for the custom color wheel and logo.
