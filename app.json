@@ -41,6 +41,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "62ac9c90-3474-4826-b617-ff6417062cf0"
+      }
+    },
+    "owner": "pollipage"
   }
 }
