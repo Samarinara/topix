@@ -37,6 +37,7 @@ export function Rolodex({
   onFocusChange,
 }: Props) {
   const [containerHeight, setContainerHeight] = useState(0);
+  const [focusedIndexState, setFocusedIndexState] = useState(0);
   const scrollY = useSharedValue(0);
   const focusedIndex = useSharedValue(0);
   const holdProgress = useSharedValue(0);
@@ -83,6 +84,7 @@ export function Rolodex({
 
   const handleFocusChange = useCallback(
     (index: number) => {
+      setFocusedIndexState(index);
       onFocusChange(index);
       if (index !== lastHapticIndex.current) {
         lastHapticIndex.current = index;
@@ -160,7 +162,7 @@ export function Rolodex({
   }
 
   const currentTopicColor =
-    topics[Math.round(focusedIndex.value)]?.color ?? "#888";
+    topics[Math.round(focusedIndexState)]?.color ?? "#888";
 
   return (
     <GestureDetector gesture={composed}>
