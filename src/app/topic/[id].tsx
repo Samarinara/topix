@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,9 @@ import {
   StyleSheet,
   Alert,
   BackHandler,
+  TextInput,
+  Keyboard,
+  Platform,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -50,18 +53,34 @@ function relativeTime(ts: number): string {
   return `${days}d ago`;
 }
 
+function highlightText(text: string, query: string, color: string) {
+  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+  return parts.map((part, i) =>
+    part.toLowerCase() === query.toLowerCase()
+      ? (
+        <Text key={i} style={{ backgroundColor: color + "30", fontWeight: "600" }}>
+          {part}
+        </Text>
+      )
+      : part,
+  );
+}
+
 function EntryCard({
   item,
   index,
   topicColor,
   onLongPress,
   theme,
+  searchQuery,
 }: {
   item: Entry;
   index: number;
   topicColor: string;
   onLongPress: (entry: Entry) => void;
   theme: typeof Colors.light | typeof Colors.dark;
+  searchQuery?: string;
 }) {
   const rippleScale = useSharedValue(0);
   const rippleOpacity = useSharedValue(0);
@@ -110,7 +129,11 @@ function EntryCard({
         >
           <View style={styles.entryContent}>
             <Animated.View style={rippleStyle} pointerEvents="none" />
-            <Text style={[styles.entryText, { color: theme.text }]}>{item.text}</Text>
+            <Text style={[styles.entryText, { color: theme.text }]}>
+              {searchQuery?.trim()
+                ? highlightText(item.text, searchQuery, topicColor)
+                : item.text}
+            </Text>
             <Text style={[styles.entryTime, { color: theme.textTertiary }]}>{relativeTime(item.createdAt)}</Text>
           </View>
         </Pressable>
@@ -131,7 +154,16 @@ export default function TopicEntriesScreen() {
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [showSheet, setShowSheet] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<TextInput>(null);
 
+  const filteredEntries = useMemo(() => {
+    if (!searchQuery.trim()) return entries;
+    const q = searchQuery.toLowerCase().trim();
+    return entries.filter((e) => e.text.toLowerCase().includes(q));
+  }, [entries, searchQuery]);
+
+  const keyboardHeight = useSharedValue(0);
   const animatedBgOpacity = useSharedValue(0);
   const pulseOpacity = useSharedValue(0);
   const emptyScale = useSharedValue(1);
@@ -170,6 +202,29 @@ export default function TopicEntriesScreen() {
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (e) => {
+        keyboardHeight.value = withTiming(e.endCoordinates.height, { duration: 250 });
+      },
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => {
+        keyboardHeight.value = withTiming(0, { duration: 250 });
+      },
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, [keyboardHeight]);
+
+  const bottomAreaStyle = useAnimatedStyle(() => ({
+    bottom: Math.max(insets.bottom, 16) + 12 + keyboardHeight.value,
+  }));
 
   const handleBack = useCallback(() => {
     if (showSettings) {
@@ -352,11 +407,13 @@ export default function TopicEntriesScreen() {
       </Animated.View>
 
       <Animated.FlatList
-        data={entries}
+        data={filteredEntries}
         keyExtractor={(item) => item.id}
+        keyboardDismissMode="on-drag"
+        extraData={searchQuery}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: insets.bottom + 100 },
+          { paddingBottom: insets.bottom + 120 },
         ]}
         renderItem={({ item, index }) => (
           <EntryCard
@@ -365,43 +422,87 @@ export default function TopicEntriesScreen() {
             topicColor={topic.color}
             onLongPress={handleLongPress}
             theme={theme}
+            searchQuery={searchQuery}
           />
         )}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Animated.View
-              style={[
-                styles.emptyCircle,
-                {
-                  backgroundColor: topic.color + "20",
-                  transform: [{ scale: emptyScale }],
-                  opacity: emptyOpacity,
-                },
-              ]}
-            />
-            <Text style={[styles.emptyText, { color: theme.textTertiary }]}>No entries yet</Text>
-            <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>
-              Tap the + to add your first thought
-            </Text>
-          </View>
+          searchQuery.trim() ? (
+            <View style={styles.emptyState}>
+              <Text style={[styles.emptyText, { color: theme.textTertiary }]}>No matches</Text>
+              <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>
+                No entries match &quot;{searchQuery}&quot;
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Animated.View
+                style={[
+                  styles.emptyCircle,
+                  {
+                    backgroundColor: topic.color + "20",
+                    transform: [{ scale: emptyScale }],
+                    opacity: emptyOpacity,
+                  },
+                ]}
+              />
+              <Text style={[styles.emptyText, { color: theme.textTertiary }]}>No entries yet</Text>
+              <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>
+                Tap the + to add your first thought
+              </Text>
+            </View>
+          )
         }
       />
 
-      <Animated.View entering={FadeInUp.duration(400).delay(500)}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.fab,
-            { backgroundColor: topic.color },
-            pressed && styles.fabPressed,
-          ]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setSelectedEntry(null);
-            setShowSheet(true);
-          }}
-        >
-          <Text style={[styles.fabText, { color: theme.textInverse }]}>+</Text>
-        </Pressable>
+      <Animated.View style={[styles.bottomArea, bottomAreaStyle]}>
+        {searchQuery.trim() ? (
+          <Text style={[styles.resultCount, { color: theme.textTertiary }]}>
+            {filteredEntries.length === 0
+              ? "No matches"
+              : `${filteredEntries.length} result${filteredEntries.length === 1 ? "" : "s"}`}
+          </Text>
+        ) : null}
+        <View style={styles.bottomRow}>
+          <View style={[styles.searchBar, { backgroundColor: theme.backgroundElement }]}>
+            <Text style={[styles.searchIcon, { color: theme.textTertiary }]}>⌕</Text>
+            <TextInput
+              ref={searchInputRef}
+              style={[styles.searchInput, { color: theme.text }]}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search entries..."
+              placeholderTextColor={theme.textTertiary}
+              returnKeyType="search"
+            />
+            {searchQuery.length > 0 && (
+              <Pressable
+                onPress={() => {
+                  setSearchQuery("");
+                  searchInputRef.current?.focus();
+                }}
+                hitSlop={8}
+              >
+                <Text style={[styles.clearIcon, { color: theme.textTertiary }]}>✕</Text>
+              </Pressable>
+            )}
+          </View>
+          <Pressable
+            onPress={() => {
+              Keyboard.dismiss();
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setSelectedEntry(null);
+              setShowSheet(true);
+            }}
+            hitSlop={8}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <View style={[styles.addBtn, { backgroundColor: topic.color }]}>
+              <Text style={styles.addBtnText}>+</Text>
+            </View>
+          </Pressable>
+        </View>
       </Animated.View>
 
       <AddEntrySheet
@@ -514,28 +615,57 @@ const styles = StyleSheet.create({
   emptySubtext: {
     fontSize: 14,
   },
-  fab: {
+  bottomArea: {
     position: "absolute",
-    bottom: 32,
-    right: 24,
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    left: 20,
+    right: 20,
+  },
+  bottomRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  resultCount: {
+    fontSize: 12,
+    fontWeight: "500",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    height: 52,
+    gap: 10,
+  },
+  searchIcon: {
+    fontSize: 18,
+    fontWeight: "400",
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 0,
+    height: "100%",
+  },
+  clearIcon: {
+    fontSize: 14,
+    fontWeight: "400",
+    padding: 4,
+  },
+  addBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
   },
-  fabPressed: {
-    transform: [{ scale: 0.97 }],
-    opacity: 0.9,
-  },
-  fabText: {
-    fontSize: 32,
+  addBtnText: {
+    color: "#fff",
+    fontSize: 22,
     fontWeight: "300",
-    lineHeight: 34,
+    lineHeight: 24,
   },
 });
