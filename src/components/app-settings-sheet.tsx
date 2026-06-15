@@ -7,7 +7,7 @@ import {
   BackHandler,
 } from "react-native";
 import Animated, {
-  SlideInUp,
+  SlideInDown,
   SlideOutDown,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -62,7 +62,7 @@ export function AppSettingsSheet({ visible, onClose }: Props) {
     <Animated.View style={styles.overlay}>
       <Pressable style={[styles.backdrop, { backgroundColor: theme.backdrop }]} onPress={handleClose} />
       <Animated.View
-        entering={SlideInUp.duration(300)}
+        entering={SlideInDown.duration(300)}
         exiting={SlideOutDown.duration(250)}
         style={[styles.sheet, { backgroundColor: theme.backgroundSheet, paddingBottom: insets.bottom + 16 }]}
       >
